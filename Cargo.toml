@@ -1,0 +1,11 @@
+[package]
+name = "ternary-tnn"
+version = "0.1.0"
+edition = "2021"
+description = "Ternary Neural Network layers: {-1,0,+1} weights with INT2 scaling, LUT matmul, and straight-through estimation"
+license = "MIT"
+keywords = ["neural-network", "ternary", "quantization", "bitnet", "machine-learning"]
+
+[lib]
+name = "ternary_tnn"
+path = "src/lib.rs"
