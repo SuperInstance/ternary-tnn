@@ -9,6 +9,3 @@ keywords = ["neural-network", "ternary", "quantization", "bitnet", "machine-lear
 [lib]
 name = "ternary_tnn"
 path = "src/lib.rs"
-
-[dependencies]
-ternary-types = { git = "https://github.com/SuperInstance/ternary-types.git", features = ["std"] }
