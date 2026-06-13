@@ -1,5 +1,4 @@
 [package]
-repository = "https://github.com/SuperInstance/ternary-tnn"
 name = "ternary-tnn"
 version = "0.1.0"
 edition = "2021"
