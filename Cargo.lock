@@ -3,5 +3,18 @@
 version = 4
 
 [[package]]
+name = "neon-kernel"
+version = "0.1.0"
+
+[[package]]
 name = "ternary-tnn"
 version = "0.1.0"
+dependencies = [
+ "neon-kernel",
+ "ternary-types",
+]
+
+[[package]]
+name = "ternary-types"
+version = "0.2.0"
+source = "git+https://github.com/SuperInstance/ternary-types.git#a538c29a2d25aa8ae92fb6bf29bd4808bc873aa5"

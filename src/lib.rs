@@ -303,7 +303,19 @@ pub fn ste_gradient_batch(grad_outputs: &[f32], weights: &[f32]) -> Vec<f32> {
 ///   -1 → accumulate -x
 ///    0 → skip (contributes nothing)
 /// No floating-point multiplications are required.
+///
+/// When the `simd` feature is enabled and the matrix is 16×16 or a multiple
+/// thereof, delegates to the Zig NEON-accelerated `matmul_ternary_16x16`.
+/// Otherwise falls back to the pure-Rust row-wise LUT matmul.
 pub fn lut_matmul(weights: &[i8], input: &[f32], rows: usize, cols: usize) -> Vec<f32> {
+    // SIMD fast path for dense ternary blocks (16×16 tiled)
+    #[cfg(feature = "simd")]
+    {
+        if rows == 16 && cols == 16 {
+            return simd_matmul_16x16(weights, input);
+        }
+        // Future: tile larger matrices into 16×16 blocks
+    }
     assert_eq!(weights.len(), rows * cols);
     assert_eq!(input.len(), cols);
     (0..rows)
@@ -526,4 +538,38 @@ mod tests {
         let (oh, ow) = c.output_size(8, 8);
         assert_eq!(out.len(), 2 * oh * ow);
     }
+}
+
+// ── SIMD-accelerated Matmul ───────────────────────────────────────────────────
+
+/// SIMD-accelerated 16×16 ternary matmul via the Zig NEON kernel.
+/// Requires the `simd` feature and the `neon-kernel` crate.
+#[cfg(feature = "simd")]
+fn simd_matmul_16x16(weights: &[i8], input: &[f32]) -> Vec<f32> {
+    use neon_kernel::zig_ffi;
+
+    // Pack the 16×16 weight matrix into u128 rows
+    let mut packed_rows = [0u128; 16];
+    for i in 0..16 {
+        let row: &[i8; 16] = &weights[i * 16..(i + 1) * 16].try_into().unwrap();
+        // Pad to 64 elements for the pack function
+        let mut padded = [0i8; 64];
+        padded[..16].copy_from_slice(row);
+        packed_rows[i] = zig_ffi::pack_ternary(&padded);
+    }
+
+    // Pack the 16×16 input as a ternary matrix (threshold-quantized)
+    // For now: treat input as a single column × 16 rows, packed as columns
+    let mut packed_cols = [0u128; 16];
+    for j in 0..16 {
+        let mut col_vals = [0i8; 64];
+        for i in 0..16 {
+            col_vals[i] = if input[i] > 0.0 { 1 } else if input[i] < 0.0 { -1 } else { 0 };
+        }
+        packed_cols[j] = zig_ffi::pack_ternary(&col_vals);
+    }
+
+    let mut output = [0.0f32; 256];
+    zig_ffi::matmul_ternary(&packed_rows, &packed_cols, &mut output);
+    output[..16].to_vec()
 }

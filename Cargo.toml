@@ -1,11 +1,18 @@
 [package]
 name = "ternary-tnn"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-description = "Ternary Neural Network layers: {-1,0,+1} weights with INT2 scaling, LUT matmul, and straight-through estimation"
+description = "Ternary Neural Network layers: {-1,0,+1} weights with INT2 scaling, LUT matmul, NEON-accelerated matmul, and straight-through estimation"
 license = "MIT"
 keywords = ["neural-network", "ternary", "quantization", "bitnet", "machine-learning"]
 
 [lib]
 name = "ternary_tnn"
 path = "src/lib.rs"
+
+[dependencies]
+ternary-types = { git = "https://github.com/SuperInstance/ternary-types.git", features = ["std"] }
+neon-kernel = { path = "../the-rotation/crates/neon-kernel", optional = true }
+
+[features]
+simd = ["neon-kernel/zig-kernel"]
